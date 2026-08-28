@@ -16,6 +16,7 @@ public class MainActivity extends Activity {
 
     int bg, fg, accent;
     boolean analog, month, seconds, twentyFour;
+    int fontChoice;
     float brightness;
 
     @Override public void onCreate(Bundle state) {
@@ -33,6 +34,7 @@ public class MainActivity extends Activity {
         month = prefs.getBoolean("month", true);
         seconds = prefs.getBoolean("seconds", false);
         twentyFour = prefs.getBoolean("twentyFour", false);
+        fontChoice = prefs.getInt("fontChoice", 0);
         brightness = prefs.getFloat("brightness", .48f);
     }
 
@@ -40,6 +42,7 @@ public class MainActivity extends Activity {
         prefs.edit().putBoolean("configured", true).putInt("bg", bg).putInt("fg", fg)
             .putInt("accent", accent).putBoolean("analog", analog).putBoolean("month", month)
             .putBoolean("seconds", seconds).putBoolean("twentyFour", twentyFour)
+            .putInt("fontChoice", fontChoice)
             .putFloat("brightness", brightness).apply();
     }
 
@@ -74,6 +77,7 @@ public class MainActivity extends Activity {
 
         addLabel(page, "CLOCK"); LinearLayout clockChoice = segmented("Digital", "Analog", !analog, v -> { analog = v == 1; preview.invalidate(); }); page.addView(clockChoice);
         space(page, 18); addLabel(page, "CALENDAR"); LinearLayout calChoice = segmented("Full month", "Today only", month, v -> { month = v == 0; preview.invalidate(); }); page.addView(calChoice);
+        space(page, 22); addLabel(page, "TYPEFACE"); page.addView(fontPicker(preview));
         space(page, 22); addLabel(page, "PALETTE");
         LinearLayout palettes = new LinearLayout(this); palettes.setGravity(Gravity.CENTER); palettes.setOrientation(LinearLayout.HORIZONTAL);
         int[][] themes = {{0xff050506,0xffebeae6,0xff758eff},{0xff0b1012,0xffe4eee9,0xff66c7a4},{0xff15110e,0xfff0e8dc,0xffc99b68},{0xff111016,0xffeeeaf7,0xffb091ee}};
@@ -111,6 +115,32 @@ public class MainActivity extends Activity {
     LinearLayout toggleRow(String label, boolean value, BoolPick pick){
         LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL); TextView t=text(label,14,0xffd8d8dc); Switch s=new Switch(this);s.setChecked(value);s.setOnCheckedChangeListener((b,c)->pick.set(c));row.addView(t,new LinearLayout.LayoutParams(0,dp(52),1));row.addView(s);return row;
     }
+    Typeface selectedTypeface(){
+        if(Build.VERSION.SDK_INT>=26){
+            int[] fonts={R.font.inter,R.font.manrope,R.font.space_grotesk,R.font.ibm_plex_mono};
+            return getResources().getFont(fonts[Math.max(0,Math.min(fontChoice,fonts.length-1))]);
+        }
+        String[] fallback={"sans","sans-serif-medium","sans-serif","monospace"};
+        return Typeface.create(fallback[Math.max(0,Math.min(fontChoice,fallback.length-1))],Typeface.NORMAL);
+    }
+    LinearLayout fontPicker(ClockView preview){
+        LinearLayout stack=new LinearLayout(this);stack.setOrientation(LinearLayout.VERTICAL);
+        String[] names={"Inter","Manrope","Space Grotesk","IBM Plex Mono"};
+        int[] ids={R.font.inter,R.font.manrope,R.font.space_grotesk,R.font.ibm_plex_mono};
+        TextView[] cards=new TextView[4];
+        Runnable redraw=()->{for(int i=0;i<cards.length;i++)if(cards[i]!=null)cards[i].setBackground(panel(i==fontChoice?0xff303034:0xff151517,14,i==fontChoice?accent:0xff29292d));};
+        for(int row=0;row<2;row++){
+            LinearLayout line=new LinearLayout(this);line.setOrientation(LinearLayout.HORIZONTAL);
+            for(int col=0;col<2;col++){
+                int i=row*2+col;TextView card=text(names[i]+"\n10:28",14,0xffededee);card.setGravity(Gravity.CENTER);card.setLineSpacing(dp(3),1f);pad(card,8,10);
+                if(Build.VERSION.SDK_INT>=26)card.setTypeface(getResources().getFont(ids[i]));
+                final int selected=i;card.setOnClickListener(v->{fontChoice=selected;redraw.run();preview.invalidate();});cards[i]=card;
+                LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(68),1);lp.setMargins(col==0?0:dp(4),row==0?0:dp(4),col==0?dp(4):0,0);line.addView(card,lp);
+            }
+            stack.addView(line,new LinearLayout.LayoutParams(-1,dp(72)));
+        }
+        redraw.run();return stack;
+    }
     LinearLayout colorRow(String label, IntGet get, IntPick pick){
         LinearLayout row=new LinearLayout(this);row.setGravity(Gravity.CENTER_VERTICAL);TextView t=text(label,14,0xffd8d8dc);View chip=new View(this);chip.setBackground(panel(get.get(),20,0xff45454a));row.addView(t,new LinearLayout.LayoutParams(0,dp(48),1));row.addView(chip,new LinearLayout.LayoutParams(dp(34),dp(34)));
         row.setOnClickListener(v->showColorDialog(label,get.get(),c->{pick.set(c);chip.setBackground(panel(c,20,0xff45454a));}));return row;
@@ -135,12 +165,12 @@ public class MainActivity extends Activity {
         Runnable tick=new Runnable(){public void run(){now=Calendar.getInstance();int slot=(int)(System.currentTimeMillis()/300000L);shiftX=(slot%5)-2;shiftY=((slot/5)%5)-2;invalidate();timer.postDelayed(this,1000);}};
         ClockView(Context c,boolean preview){super(c);this.preview=preview;setBackgroundColor(bg);if(!preview)timer.post(tick);setOnTouchListener((v,e)->{if(preview)return true;if(e.getAction()==0&&e.getX()>getWidth()-dp(70)&&e.getY()<dp(70)){downAt=System.currentTimeMillis();return true;}if(e.getAction()==1&&downAt>0){if(System.currentTimeMillis()-downAt>700)exitMenu();downAt=0;return true;}return true;});}
         @Override protected void onDetachedFromWindow(){timer.removeCallbacks(tick);super.onDetachedFromWindow();}
-        void font(float size,int color,Paint.Align align){p.setTypeface(Typeface.create("sans",Typeface.NORMAL));p.setTextSize(size);p.setColor(color);p.setTextAlign(align);p.setStyle(Paint.Style.FILL);p.setStrokeWidth(1);}
+        void font(float size,int color,Paint.Align align){p.setTypeface(selectedTypeface());p.setTextSize(size);p.setColor(color);p.setTextAlign(align);p.setStyle(Paint.Style.FILL);p.setStrokeWidth(1);}
         @Override protected void onDraw(Canvas c){super.onDraw(c);now=Calendar.getInstance();c.save();if(!preview)c.translate(dp(shiftX),dp(shiftY));boolean land=getWidth()>getHeight();float split=land?getWidth()*.52f:getHeight()*.49f;
             if(land){drawClock(c,0,0,split,getHeight());drawCalendar(c,split,0,getWidth()-split,getHeight());line(c,split,getHeight()*.14f,split,getHeight()*.86f);}else{drawClock(c,0,0,getWidth(),split);drawCalendar(c,0,split,getWidth(),getHeight()-split);line(c,getWidth()*.12f,split,getWidth()*.88f,split);}if(!preview){font(dp(20),blend(fg,bg,.22f),Paint.Align.CENTER);c.drawText("×",getWidth()-dp(30),dp(38),p);}c.restore();}
         void line(Canvas c,float a,float b,float x,float y){p.setColor(blend(fg,bg,.11f));p.setStrokeWidth(dp(1));c.drawLine(a,b,x,y,p);}
         void drawClock(Canvas c,float x,float y,float w,float h){if(analog)drawAnalog(c,x,y,w,h);else drawDigital(c,x,y,w,h);}
-        void drawDigital(Canvas c,float x,float y,float w,float h){String pattern=twentyFour?(seconds?"HH:mm:ss":"HH:mm"):(seconds?"h:mm:ss":"h:mm");String time=new SimpleDateFormat(pattern,Locale.getDefault()).format(now.getTime());float size=Math.min(w/(time.length()*.57f),h*.40f);font(size,fg,Paint.Align.CENTER);p.setTypeface(Typeface.create("sans",Typeface.create(Typeface.DEFAULT,Typeface.NORMAL).getStyle()));c.drawText(time,x+w/2,y+h*.54f,p);String am=twentyFour?"":new SimpleDateFormat("a",Locale.getDefault()).format(now.getTime());font(Math.max(dp(9),size*.105f),blend(fg,bg,.48f),Paint.Align.CENTER);p.setLetterSpacing(.14f);c.drawText(am,x+w/2,y+h*.68f,p);p.setLetterSpacing(0);}
+        void drawDigital(Canvas c,float x,float y,float w,float h){String pattern=twentyFour?(seconds?"HH:mm:ss":"HH:mm"):(seconds?"h:mm:ss":"h:mm");String time=new SimpleDateFormat(pattern,Locale.getDefault()).format(now.getTime());float size=Math.min(w/(time.length()*.57f),h*.40f);font(size,fg,Paint.Align.CENTER);c.drawText(time,x+w/2,y+h*.54f,p);String am=twentyFour?"":new SimpleDateFormat("a",Locale.getDefault()).format(now.getTime());font(Math.max(dp(9),size*.105f),blend(fg,bg,.48f),Paint.Align.CENTER);p.setLetterSpacing(.14f);c.drawText(am,x+w/2,y+h*.68f,p);p.setLetterSpacing(0);}
         void drawAnalog(Canvas c,float x,float y,float w,float h){float cx=x+w/2,cy=y+h/2,r=Math.min(w,h)*.31f;p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(dp(1));p.setColor(blend(fg,bg,.2f));c.drawCircle(cx,cy,r,p);for(int i=0;i<60;i++){double a=i*Math.PI/30-Math.PI/2;float in=r*(i%5==0?.88f:.95f);p.setColor(i%5==0?blend(fg,bg,.65f):blend(fg,bg,.22f));p.setStrokeWidth(i%5==0?dp(2):dp(1));c.drawLine(cx+(float)Math.cos(a)*in,cy+(float)Math.sin(a)*in,cx+(float)Math.cos(a)*r,cy+(float)Math.sin(a)*r,p);}float min=now.get(Calendar.MINUTE)+now.get(Calendar.SECOND)/60f;float hr=now.get(Calendar.HOUR)+min/60f;hand(c,cx,cy,r*.54f,hr*Math.PI/6-Math.PI/2,fg,dp(4));hand(c,cx,cy,r*.76f,min*Math.PI/30-Math.PI/2,fg,dp(3));if(seconds)hand(c,cx,cy,r*.76f,now.get(Calendar.SECOND)*Math.PI/30-Math.PI/2,accent,dp(1));p.setStyle(Paint.Style.FILL);p.setColor(accent);c.drawCircle(cx,cy,dp(4),p);}
         void hand(Canvas c,float x,float y,float len,double a,int color,float sw){p.setStyle(Paint.Style.STROKE);p.setStrokeCap(Paint.Cap.ROUND);p.setStrokeWidth(sw);p.setColor(color);c.drawLine(x,y,x+(float)Math.cos(a)*len,y+(float)Math.sin(a)*len,p);p.setStrokeCap(Paint.Cap.BUTT);}
         void drawCalendar(Canvas c,float x,float y,float w,float h){if(month)drawMonth(c,x,y,w,h);else drawToday(c,x,y,w,h);}

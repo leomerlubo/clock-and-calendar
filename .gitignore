@@ -6,6 +6,7 @@ app/build/
 manual-build/
 manual-build2/
 manual-build3/
+manual-build-fonts/
 repo-inspect/
 local.properties
 *.iml

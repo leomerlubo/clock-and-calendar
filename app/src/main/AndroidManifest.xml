@@ -1,0 +1,10 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.leomerlubo.clockcalendar" android:versionCode="1" android:versionName="1.0.0">
+    <application android:theme="@style/AppTheme" android:label="Clock &amp; Calendar" android:icon="@drawable/app_icon" android:roundIcon="@drawable/app_icon" android:allowBackup="true" android:supportsRtl="true">
+        <activity android:name=".MainActivity" android:screenOrientation="fullSensor" android:configChanges="orientation|screenSize" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

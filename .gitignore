@@ -1,0 +1,14 @@
+.gradle/
+.idea/
+.tooling/
+build/
+app/build/
+manual-build/
+manual-build2/
+manual-build3/
+repo-inspect/
+local.properties
+*.iml
+*.jks
+*.keystore
+*.idsig

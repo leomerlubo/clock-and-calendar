@@ -31,4 +31,8 @@ jobs:
         if: startsWith(github.ref, 'refs/heads/release-v')
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "v1.2.0" app/build/outputs/apk/debug/app-debug.apk#Clock-Calendar-v1.2.0.apk --target "$GITHUB_SHA" --title "Clock & Calendar 1.2.0" --notes "Adds optional calendar navigation and a minimalist animated battery display."
+        run: |
+          VERSION="${GITHUB_REF_NAME#release-}"
+          APK_NAME="Clock-Calendar-${VERSION}.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$APK_NAME"
+          gh release create "$VERSION" "$APK_NAME" --target "$GITHUB_SHA" --title "Clock & Calendar ${VERSION#v}" --generate-notes

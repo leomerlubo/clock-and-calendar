@@ -7,6 +7,8 @@ A quiet, premium Android desk display designed for focused work.
 * Adaptive portrait and landscape layouts
 * Digital or analog clock
 * Full month or today only calendar
+* Optional fixed or scrollable calendar with arrow and swipe navigation
+* Minimal battery level display with a live charging animation
 * Curated palettes and custom HSV color picker
 * Four curated minimalist typefaces with live previews
 * Immersive full screen display with screen awake behavior

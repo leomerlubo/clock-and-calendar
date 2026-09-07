@@ -3,7 +3,11 @@ name: Android APK
 on:
   push:
     branches: [main]
+    tags: ['v*']
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -22,3 +26,8 @@ jobs:
         with:
           name: Clock-Calendar-APK
           path: app/build/outputs/apk/debug/app-debug.apk
+      - name: Publish APK release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" app/build/outputs/apk/debug/app-debug.apk#Clock-Calendar-v1.2.0.apk --title "Clock & Calendar 1.2.0" --notes "Adds optional calendar navigation and a minimalist animated battery display."

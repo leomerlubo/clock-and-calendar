@@ -6,6 +6,7 @@ A quiet, premium Android desk display designed for focused work.
 
 * Adaptive portrait and landscape layouts
 * Digital or analog clock
+* Clock only mode with a larger centered full screen clock
 * Full month or today only calendar
 * Optional fixed or scrollable calendar with arrow and swipe navigation
 * One tap Today shortcut and responsive clock or calendar positioning
